@@ -1,4 +1,4 @@
-## Interface: 80100
+## Interface: 90001
 ## Title: Easy Raid Calendar
 ## Author: Avonmora@Kazzak-EU
 ## Version: r48-release
