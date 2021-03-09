@@ -25,7 +25,7 @@ local backdrop = {
 
 local defaults = {
   profile = {
-    fLVL = 120
+    fLVL = 60
   }
 }
 
