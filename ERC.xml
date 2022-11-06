@@ -5,7 +5,7 @@
 		<Size x="345" y="25"/>
 		<Frames>
 			<!-- Header button template -->
-			<Button name="$parentHeader" parentKey="header" setAllPoints="true">
+			<Button name="$parentERCHeader_" parentKey="ERCHeader" setAllPoints="true">
 				<Layers>
 					<Layer level="BORDER">
 						<Texture name="$parentHeaderLeft" file="Interface\Buttons\CollapsibleHeader">
@@ -31,7 +31,7 @@
 							<TexCoords left="0.48046875" right="0.98046875" top="0.01562500" bottom="0.26562500"/>
 						</Texture>
 					</Layer>
-					<Layer level="ARTWORK">
+					<Layer>
 						<FontString inherits="GameFontHighlight" justifyH="LEFT" parentKey="text">
 							<Anchors>
 								<Anchor point="LEFT" x="24" y="0"/>
@@ -67,12 +67,12 @@
 					</OnClick>
 				</Scripts>
 				<Frames>
-					<Button name="$parentKey1Button" inherits="UIGoldBorderButtonTemplate" parentKey="key1" id="1" setAllPoints="true">
+					<Button name="$parentERCKey1Button" inherits="ERCGoldBorderButtonTemplate" parentKey="btn1">
 						<Size>
 							<AbsDimension x="85" y="22"/>
 						</Size>
 						<Anchors>
-							<Anchor point="LEFT" relativeTo="$parent" relativePoint="LEFT">
+							<Anchor point="LEFT">
 								<Offset>
 									<AbsDimension x="170" y="0"/>
 								</Offset>
@@ -84,12 +84,12 @@
 							</OnClick>
 						</Scripts>
 					</Button>
-					<Button name="$parentKey2Button" inherits="UIGoldBorderButtonTemplate" parentKey="key2" id="1" setAllPoints="true">
+					<Button name="$parentERCKey2Button" inherits="ERCGoldBorderButtonTemplate" parentKey="btn2">
 						<Size>
 							<AbsDimension x="85" y="22"/>
 						</Size>
 						<Anchors>
-							<Anchor point="LEFT" relativeTo="$parentKey1Button" relativePoint="RIGHT">
+							<Anchor point="LEFT" relativeTo="$parentERCKey1Button" relativePoint="RIGHT">
 								<Offset>
 									<AbsDimension x="0" y="0"/>
 								</Offset>
@@ -104,9 +104,9 @@
 				</Frames>
 			</Button>
 			<!-- Detail button template -->
-			<Button name="$parentDetail" parentKey="detail" setAllPoints="true">
+			<Button name="$parentERCDetail_" parentKey="ERCDetail" setAllPoints="true">
 				<Layers>
-					<Layer level="ARTWORK">
+					<Layer>
 						<FontString name="$parentDescription" inherits="GameFontHighlight" justifyH="LEFT" parentKey="text">
 							<Size>
 								<AbsDimension x="170" y="24"/>
@@ -122,7 +122,7 @@
 					</Layer>
 				</Layers>
 				<Frames>
-					<Button name="$parentKey1Button" inherits="UIPanelButtonTemplate" parentKey="key1" id="1" setAllPoints="true">
+					<Button name="$parentERCKey1Button" inherits="UIPanelButtonNoTooltipTemplate" parentKey="btn1">
 						<Size>
 							<AbsDimension x="85" y="22"/>
 						</Size>
@@ -139,12 +139,12 @@
 							</OnClick>
 						</Scripts>
 					</Button>
-					<Button name="$parentKey2Button" inherits="UIPanelButtonTemplate" parentKey="key2" id="2" setAllPoints="true">
+					<Button name="$parentERCKey2Button" inherits="UIPanelButtonNoTooltipTemplate" parentKey="btn2">
 						<Size>
 							<AbsDimension x="85" y="22"/>
 						</Size>
 						<Anchors>
-							<Anchor point="LEFT" relativeTo="$parentKey1Button" relativePoint="RIGHT">
+							<Anchor point="LEFT" relativeTo="$parentERCKey1Button" relativePoint="RIGHT">
 								<Offset>
 									<AbsDimension x="0" y="0"/>
 								</Offset>
@@ -159,5 +159,28 @@
 				</Frames>
 			</Button>
 		</Frames>
+	</Button>
+	<Button name="ERCGoldBorderButtonTemplate" virtual="true">
+		<Size x="105" y="22"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture file="Interface\Common\dark-goldframe-button" >
+					<Anchors>
+						<Anchor point="TOPLEFT" x="0" y="2"/>
+						<Anchor point="BOTTOMRIGHT" x="0" y="-2"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+		</Layers>
+		<Scripts>
+			<OnLoad function="RaiseFrameLevel"/>
+		</Scripts>
+		<NormalFont style="GameFontNormal"/>
+		<HighlightFont style="GameFontHighlight"/>
+		<DisabledFont style="GameFontDisable"/>
+		<PushedTexture file="Interface\Common\dark-goldframe-button-pressed"/>
+		<HighlightTexture file="Interface\Buttons\UI-Silver-Button-Highlight" alphaMode="ADD">
+			<TexCoords left="0" right="1.0" top="0.03" bottom="0.7175"/>
+		</HighlightTexture>
 	</Button>
 </Ui>
