@@ -1,0 +1,8 @@
+## Interface: 30400
+## Title: Easy Raid Calendar
+## Notes: Raid Calendar Invites Automation
+## DefaultState: Enabled
+## SavedVariables: ERCDB
+
+ERC.xml
+ERC.lua
