@@ -27,17 +27,19 @@ local backdrop = {
 
 local defaults = {
     profile = {
-        fLVL = 80
+        fLVL = 80,
+        mLVL = 80
     }
 }
 
 function ERC:OnInitialize()
-    ERC:Print("OnInitialize()")
+    ERC:DPrint("OnInitialize()")
     ERC:RegisterChatCommand("erc", "ChatCommand")
 end
+
 --CALENDAR_CLOSE_EVENT
 function ERC:OnEnable()
-    ERC:Print("OnEnable()")
+    ERC:DPrint("OnEnable()")
     self.dummy = CreateFrame("Frame")
     self.dummy:SetScript("OnEvent", self.OnEvent)
 
@@ -49,7 +51,7 @@ function ERC:OnEnable()
 end
 
 function ERC:OnDisable()
-    ERC:Print("OnDisable()")
+    ERC:DPrint("OnDisable()")
 
     self.frame:UnregisterEvent("CALENDAR_ACTION_PENDING")
     self.frame:UnregisterEvent("CALENDAR_UPDATE_INVITE_LIST")
@@ -69,15 +71,15 @@ end
 
 function ERC:ChatCommand(input)
     if not input or input:trim() == "" then
-        ERC:Print("Empty command")
+        ERC:DPrint("Empty command")
     end
     if input:trim() == "debug on" then
-        ERC:Print(input)
+        ERC:DPrint(input)
         self.debug = true
     end
     if input:trim() == "debug off" then
         self.debug = false
-        ERC:Print(input)
+        ERC:DPrint(input)
     end
 
 end
@@ -362,6 +364,10 @@ function ERC:OnEvent(event, ...)
             ERC.inviteList = {}
             ERC.removeList = {}
             ERC.debug = false
+            if modern then
+                defaults.profile.fLVL = 60
+                defaults.profile.mLVL = 70
+            end
             ERC.db = LibStub("AceDB-3.0"):New("ERCDB", defaults, true)
             ERC.options = {
                 name = "General",
@@ -372,7 +378,7 @@ function ERC:OnEvent(event, ...)
                         desc = "Minimum Level to conisider for events",
                         type = "range",
                         min = 1,
-                        max = 80,
+                        max = defaults.profile.mLVL,
                         step = 1,
                         set = function(info, val)
                             ERC.db.profile.fLVL = val
@@ -545,6 +551,7 @@ function ERC:UpdateWorkingList()
     local numGuildMembers, numOnline, numOnlineAndMobile = GetNumGuildMembers()
     for z = 1, numGuildMembers do
         local name, rank, rankIndex, level, class, zone, note, officernote, online, status, classFileName, achievementPoints, achievementRank, isMobile = GetGuildRosterInfo(z);
+
         if rmmap[rankIndex + 1] == nil then
             rmmap[rankIndex + 1] = {}
         end
@@ -594,6 +601,8 @@ function Update(...)
             button:SetID(index)
             local item = self.workingList[index]
             if item.header then
+
+
                 button.ERCHeader.text:SetText(item.name)
                 button.ERCHeader.btn1:SetText("Invite All")
                 button.ERCHeader.btn1.rank = item.truename
@@ -608,20 +617,20 @@ function Update(...)
                 button.ERCHeader:Show()
             else
                 button.ERCDetail.text:SetText(modern and item.name or item.shortname)
-            button.ERCDetail.text:SetTextColor(item.color.r, item.color.g, item.color.b, item.color.a)
-            if item.invited == true then
-            button.ERCDetail.btn1:Disable()
-            button.ERCDetail.btn2:Enable()
-            else
-            button.ERCDetail.btn1:Enable()
-            button.ERCDetail.btn2:Disable()
-            end
-            button.ERCDetail.btn1:SetText("Invite")
-            button.ERCDetail.btn1.target = item.name
-            button.ERCDetail.btn2:SetText("Remove")
-            button.ERCDetail.btn2.target = item.name
-            button.ERCHeader:Hide()
-            button.ERCDetail:Show()
+                button.ERCDetail.text:SetTextColor(item.color.r, item.color.g, item.color.b, item.color.a)
+                if item.invited == true then
+                    button.ERCDetail.btn1:Disable()
+                    button.ERCDetail.btn2:Enable()
+                else
+                    button.ERCDetail.btn1:Enable()
+                    button.ERCDetail.btn2:Disable()
+                end
+                button.ERCDetail.btn1:SetText("Invite")
+                button.ERCDetail.btn1.target = item.name
+                button.ERCDetail.btn2:SetText("Remove")
+                button.ERCDetail.btn2.target = item.name
+                button.ERCHeader:Hide()
+                button.ERCDetail:Show()
             end
             button:Show()
         end

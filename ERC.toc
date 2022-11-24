@@ -1,10 +1,8 @@
 ## Interface: 100000
 ## Title: Easy Raid Calendar
-## Notes: Raid Calendar Invites Automation
+## Notes: Raid Calendar Invites Automation (retail)
 ## DefaultState: Enabled
-## LoadOnDemand: 1
 ## SavedVariables: ERCDB
-## LoadWith: Blizzard_Calendar
 
 ERC.xml
 ERC.lua
