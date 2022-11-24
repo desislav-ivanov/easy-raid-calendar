@@ -1,6 +1,6 @@
 ## Interface: 30400
 ## Title: Easy Raid Calendar
-## Notes: Raid Calendar Invites Automation
+## Notes: Raid Calendar Invites Automation (classic)
 ## DefaultState: Enabled
 ## SavedVariables: ERCDB
 
