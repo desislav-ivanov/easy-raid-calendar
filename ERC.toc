@@ -1,4 +1,4 @@
-## Interface: 100000
+## Interface: 111500
 ## Title: Easy Raid Calendar
 ## Notes: Raid Calendar Invites Automation (retail)
 ## DefaultState: Enabled
