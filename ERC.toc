@@ -1,8 +1,11 @@
-## Interface: 110100,110105
+## Interface: 120001
 ## Title: Easy Raid Calendar
-## Notes: Raid Calendar Invites Automation (retail)
-## DefaultState: Enabled
+## Notes: Raid Calendar Invites Automation (Retail 12.0.1 kompatibel; ElvUI-Skin optional)
+## Author: LeantheTarrenMill modified by impaxx
+## Version: 12.0.1-clean+elvskin
 ## SavedVariables: ERCDB
+## OptionalDeps: Ace3, ElvUI
 
+embeds.xml
 ERC.xml
 ERC.lua
