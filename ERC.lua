@@ -1,8 +1,6 @@
 ---@class ERC
 ERC = LibStub("AceAddon-3.0"):NewAddon("ERC", "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0")
 
-local modern = select(4, GetBuildInfo()) >= 100000
-
 ERC.BUTTON_HEIGHT = 25
 
 local backdrop = {
@@ -27,8 +25,8 @@ local backdrop = {
 
 local defaults = {
     profile = {
-        fLVL = 80,
-        mLVL = 80
+        fLVL = 90,
+        mLVL = 90
     }
 }
 
@@ -47,7 +45,6 @@ function ERC:OnEnable()
 
     ERC:RegisterMessage("ERC_INVITE", self.InviteHandler)
     ERC:RegisterMessage("ERC_UNINVITE", self.UninviteHandler)
-    ERC:RegisterMessage("ERC_OP_RESULT", self.ResultHandler)
 end
 
 function ERC:OnDisable()
@@ -60,7 +57,6 @@ function ERC:OnDisable()
 
     ERC:UnregisterMessage("ERC_INVITE")
     ERC:UnregisterMessage("ERC_UNINVITE")
-    ERC:UnregisterMessage("ERC_OP_RESULT")
 end
 
 function ERC:DPrint(...)
@@ -94,69 +90,54 @@ function ERC:UninviteHandler(target)
     tinsert(ERC.removeList, target)
 end
 
-function ERC:ResultHandler(result)
-    ERC:DPrint("ERC:ResultHandler() " .. tostring(result))
-    if result == true then
-        ERC.invite_in_progress = false
-    end
-end
-
 function ERC:FrameOnUpdate(elapsed)
     ERC.lastTimer = ERC.lastTimer + elapsed
-    canAdd = C_Calendar.CanAddEvent()
+    local canAdd = C_Calendar.CanAddEvent()
     if ERC.lastTimer > 2.0 and canAdd then
-        if not ERC.invite_in_progress then
-            if ERC.inviteList ~= nil and tablelength(ERC.inviteList) > 0 then
-                local numInvites = C_Calendar.GetNumInvites()
-                if numInvites == 100 then
-                    if not ERC.frame.statusFrame.NEWEVENT:IsShown() then
-                        ERC.frame.statusFrame.NEWEVENT:Show()
-                    end
-                else
-                    if ERC.frame.statusFrame.NEWEVENT:IsShown() then
-                        ERC.frame.statusFrame.NEWEVENT:Hide()
-                    end
-
-                    invite = table.remove(ERC.inviteList, 1)
-                    ERC:DPrint("FrameOnUpdate() CalendarEventInvite(" .. invite .. ")")
-                    local info = C_Calendar.GetEventIndex()
-                    if info then
-                        ERC:DPrint("monthOffset: " .. info.offsetMonths)
-                        ERC:DPrint("day: " .. info.monthDay)
-                        ERC:DPrint("index" .. info.eventIndex)
-                    end
-                    local isinvited = false
-                    for invidx = 1, numInvites do
-                        local invite_info = C_Calendar.EventGetInvite(invidx)
-                        if invite_info then
-                            if (Ambiguate(invite, "guild") == invite_info.name or invite == invite_info.name) and not invite_info.inviteIsMine then
-                                ERC:DPrint("FrameOnUpdate() " .. invite .. " is already invited.")
-                                isinvited = true
-                            end
-                        end
-                    end
-                    if not isinvited then
-                        C_Calendar.EventInvite(invite)
-                        self.invite_in_progress = true
-                    end
+        -- One operation per tick: invite OR remove, never both.
+        -- The 2s timer plus WoW's own calendar throttle handles spacing;
+        -- no in_progress flag needed (it had a sync-event race that stuck the queue).
+        if ERC.inviteList ~= nil and tablelength(ERC.inviteList) > 0 then
+            local numInvites = C_Calendar.GetNumInvites()
+            if numInvites == 100 then
+                if not ERC.frame.statusFrame.NEWEVENT:IsShown() then
+                    ERC.frame.statusFrame.NEWEVENT:Show()
                 end
-                --send invite
-            end
-            if ERC.removeList ~= nil and tablelength(ERC.removeList) > 0 then
-                rem = table.remove(ERC.removeList, 1)
-                local numInvites = C_Calendar.GetNumInvites()
+            else
+                if ERC.frame.statusFrame.NEWEVENT:IsShown() then
+                    ERC.frame.statusFrame.NEWEVENT:Hide()
+                end
+
+                local invite = table.remove(ERC.inviteList, 1)
+                ERC:DPrint("FrameOnUpdate() CalendarEventInvite(" .. invite .. ")")
+                local isinvited = false
                 for invidx = 1, numInvites do
                     local invite_info = C_Calendar.EventGetInvite(invidx)
                     if invite_info then
-                        ERC:DPrint("FrameOnUpdate() CalendarEventRemoveInvite(" .. tostring(invidx) .. ")")
-                        if (Ambiguate(rem, "guild") == invite_info.name or rem == invite_info.name) and not invite_info.inviteIsMine then
-                            C_Calendar.EventRemoveInvite(invidx)
+                        if (Ambiguate(invite, "guild") == invite_info.name or invite == invite_info.name) and not invite_info.inviteIsMine then
+                            ERC:DPrint("FrameOnUpdate() " .. invite .. " is already invited.")
+                            isinvited = true
+                            break
                         end
                     end
                 end
-                self.invite_in_progress = true
+                if not isinvited then
+                    C_Calendar.EventInvite(invite)
+                end
             end
-            --remove invite
+        elseif ERC.removeList ~= nil and tablelength(ERC.removeList) > 0 then
+            local rem = table.remove(ERC.removeList, 1)
+            local numInvites = C_Calendar.GetNumInvites()
+            for invidx = 1, numInvites do
+                local invite_info = C_Calendar.EventGetInvite(invidx)
+                if invite_info then
+                    if (Ambiguate(rem, "guild") == invite_info.name or rem == invite_info.name) and not invite_info.inviteIsMine then
+                        ERC:DPrint("FrameOnUpdate() CalendarEventRemoveInvite(" .. tostring(invidx) .. ") for " .. rem)
+                        C_Calendar.EventRemoveInvite(invidx)
+                        break
+                    end
+                end
+            end
         end
         ERC.lastTimer = 0
     end
@@ -175,7 +156,7 @@ end
 
 function HSF_CreateButtons (self, buttonTemplate, initialOffsetX, initialOffsetY, initialPoint, initialRelative, offsetX, offsetY, point, relativePoint)
     local scrollChild = self.scrollChild;
-    local button, buttonHeight, buttons, numButtons;
+    local button, buttonHeight, buttons;
 
     local parentName = self:GetName();
     local buttonName = parentName and (parentName .. "_Button") or nil;
@@ -224,7 +205,7 @@ function HSF_CreateButtons (self, buttonTemplate, initialOffsetX, initialOffsetY
 end
 
 function ERC:BuildUI()
-    ERC.DPrint("Bulding")
+    ERC:DPrint("Building")
     self.frame:SetPoint("TOPLEFT", CalendarCreateEventFrame, "TOPRIGHT", 20, 0)
     self.frame:SetPoint("BOTTOMRIGHT", CalendarCreateEventFrame, "BOTTOMRIGHT", 400, 0)
 
@@ -266,7 +247,7 @@ function ERC:BuildUI()
     self.frame.statusFrame.NEWEVENT:SetScript("OnClick", function()
         local einfo = C_Calendar.GetEventInfo()
         local info = C_Calendar.GetEventIndex()
-        ERC.newevent = { title = title .. "+", description = einfo.description, eventType = einfo.eventType, textureIndex = einfo.textureIndex, hour = einfo.time.hour, minute = einfo.time.minute, month = einfo.time.month, day = einfo.time.monthDay, year = einfo.time.year }
+        ERC.newevent = { title = einfo.title .. "+", description = einfo.description, eventType = einfo.eventType, textureIndex = einfo.textureIndex, hour = einfo.time.hour, minute = einfo.time.minute, month = einfo.time.month, day = einfo.time.monthDay, year = einfo.time.year }
         if info.eventIndex == 0 then
             C_Calendar.AddEvent()
             C_Timer.After(4, function()
@@ -283,7 +264,6 @@ function ERC:BuildUI()
                 ERC:DPrint("hour: " .. ERC.newevent.hour)
                 ERC:DPrint("minute: " .. ERC.newevent.minute)
 
-                ERC.overridewipe = true
                 ERC.frame.statusFrame.text:SetText("Creating Event PLEASE wait!")
                 C_Calendar.CloseEvent();
                 CalendarFrame_HideEventFrame();
@@ -297,12 +277,11 @@ function ERC:BuildUI()
                     C_Calendar.EventSetTitle(ERC.newevent.title)
                     C_Calendar.EventSetDescription(ERC.newevent.description)
                     C_Calendar.EventSetType(ERC.newevent.eventType)
-                    if eventType == 1 or eventType == 2 then
+                    if einfo.eventType == 1 or einfo.eventType == 2 then
                         C_Calendar.EventSetTextureID(ERC.newevent.textureIndex)
                     end
                     ERC.newevent = {}
                 end)
-                ERC.overridewipe = false
             end)
         else
             ERC:DPrint("Creating New Event:")
@@ -320,7 +299,6 @@ function ERC:BuildUI()
 
             C_Calendar.UpdateEvent()
 
-            ERC.overridewipe = true
             ERC.frame.statusFrame.text:SetText("Creating Event PLEASE wait!")
             C_Calendar.CloseEvent();
             CalendarFrame_HideEventFrame();
@@ -334,12 +312,11 @@ function ERC:BuildUI()
                 C_Calendar.EventSetTitle(ERC.newevent.title)
                 C_Calendar.EventSetDescription(ERC.newevent.description)
                 C_Calendar.EventSetType(ERC.newevent.eventType)
-                if eventType == 1 or eventType == 2 then
+                if einfo.eventType == 1 or einfo.eventType == 2 then
                     C_Calendar.EventSetTextureID(ERC.newevent.textureIndex)
                 end
                 ERC.newevent = {}
             end)
-            ERC.overridewipe = false
         end
     end)
     self.frame.statusFrame:Hide()
@@ -352,22 +329,16 @@ end
 
 function ERC:OnEvent(event, ...)
     if event == "ADDON_LOADED" then
-        arg1 = ...
+        local arg1 = ...
         if arg1 == "Blizzard_Calendar" then
             ERC.frame = CreateFrame("Frame", "ERCMainFrame", CalendarCreateEventFrame, BackdropTemplateMixin and "BackdropTemplate")
             ERC.frame:SetBackdrop(backdrop)
             ERC.frame:SetBackdropColor(0, 0, 0, 0.95)
             ERC.lastTimer = 0
-            ERC.overridewipe = false
             ERC.eventcreator = false
-            ERC.invite_in_progress = false
             ERC.inviteList = {}
             ERC.removeList = {}
             ERC.debug = false
-            if modern then
-                defaults.profile.fLVL = 60
-                defaults.profile.mLVL = 70
-            end
             ERC.db = LibStub("AceDB-3.0"):New("ERCDB", defaults, true)
             ERC.options = {
                 name = "General",
@@ -404,7 +375,7 @@ function ERC:OnEvent(event, ...)
         end
     end
     if event == "CALENDAR_ACTION_PENDING" then
-        arg1 = ...
+        local arg1 = ...
         if arg1 == false then
             ERC:DPrint("OnEvent() CALENDAR_ACTION_PENDING .. Loaded")
             local info = C_Calendar.GetEventIndex()
@@ -421,7 +392,7 @@ function ERC:OnEvent(event, ...)
         ERC:UpdateWorkingList()
     end
     if event == "GUILD_ROSTER_UPDATE" then
-        arg1 = ...
+        local arg1 = ...
         if arg1 == true then
             ERC:DPrint("OnEvent() GUILD_ROSTER_UPDATE (CHANGE)")
             ERC:UpdateWorkingList()
@@ -430,28 +401,11 @@ function ERC:OnEvent(event, ...)
         end
     end
     if event == "CALENDAR_UPDATE_INVITE_LIST" then
-        arg1 = ...
-        if arg1 == true then
-            ERC:DPrint("OnEvent() CALENDAR_UPDATE_INVITE_LIST (CHANGE)")
-            --clear invite and remove lists
-            if ERC.inviteList ~= nil and self.overridewipe == false then
-                ERC:DPrint("OnEvent() CALENDAR_UPDATE_INVITE_LIST (CHANGE) - WIPE inviteList")
-                wipe(ERC.inviteList)
-            end
-            if ERC.removeList ~= nil and self.overridewipe == false then
-                ERC:DPrint("OnEvent() CALENDAR_UPDATE_INVITE_LIST (CHANGE) - WIPE removeList")
-                wipe(ERC.removeList)
-            end
-        else
-            ERC:DPrint("OnEvent() CALENDAR_UPDATE_INVITE_LIST (On/Off)")
-            if self.invite_in_progress then
-                ERC:SendMessage("ERC_OP_RESULT", true)
-            end
-        end
+        ERC:DPrint("OnEvent() CALENDAR_UPDATE_INVITE_LIST")
         ERC:UpdateWorkingList()
     end
     if event == "CALENDAR_UPDATE_ERROR" then
-        ERC:SendMessage("ERC_OP_RESULT", false)
+        ERC:DPrint("OnEvent() CALENDAR_UPDATE_ERROR")
         ERC:UpdateWorkingList()
     end
 end
@@ -466,22 +420,24 @@ end
 
 -- called from template's header button <OnClick> handler
 function ERC:HeaderOnClick()
-    ERC:DPrint("Header " .. self:GetID() .. " Clicked [" .. ERC.workingList[self:GetID()].truename .. "]")
-    local command = ERC.workingList[self:GetID()].truename
+    local item = ERC.workingList[self:GetID()]
+    if not item then return end
+    ERC:DPrint("Header " .. self:GetID() .. " Clicked [" .. item.truename .. "]")
 
-    -- toggle whether header expanded or not
-    ERC.workingHeadersOpen[command] = not ERC.workingHeadersOpen[command]
+    -- toggle whether header expanded or not (keyed by rank index, since rank names can duplicate)
+    ERC.workingHeadersOpen[item.rank] = not ERC.workingHeadersOpen[item.rank]
     ERC:UpdateWorkingList()
 end
 
-function allofrank(rrank)
+-- rankID is 1-based (matches workingList[i].rank == rankIndex + 1).
+-- Match by index, not name, since WoW guild ranks can have duplicate names.
+function allofrank(rankID)
     C_GuildInfo.GuildRoster()
-    --GuildRoster()
-    local numGuildMembers, numOnline, numOnlineAndMobile = GetNumGuildMembers()
-    rmmap = {}
+    local numGuildMembers = GetNumGuildMembers()
+    local rmmap = {}
     for z = 1, numGuildMembers do
-        local name, rank, rankIndex, level, class, zone, note, officernote, online, status, classFileName, achievementPoints, achievementRank, isMobile = GetGuildRosterInfo(z);
-        if rrank == rank and level >= ERC.db.profile.fLVL then
+        local name, _, rankIndex, level = GetGuildRosterInfo(z)
+        if rankID == rankIndex + 1 and level >= ERC.db.profile.fLVL then
             rmmap[name] = false
         end
     end
@@ -489,10 +445,13 @@ function allofrank(rrank)
 end
 
 function ERC:HeaderOnInviteAll()
-    ERC:DPrint("Header " .. self.rank .. " [Invite ALL] Clicked")
+    local item = ERC.workingList[self:GetParent():GetParent():GetID()]
+    if not item or not item.header then return end
+    local rname = item.truename
+    ERC:DPrint("Header " .. rname .. " [Invite ALL] Clicked")
     local invited = {}
     local info = C_Calendar.GetEventIndex()
-    members = allofrank(self.rank)
+    local members = allofrank(item.rank)
     local numInvites = C_Calendar.GetNumInvites()
     for invidx = 1, numInvites do
         local invite_info = C_Calendar.EventGetInvite(invidx)
@@ -510,18 +469,25 @@ function ERC:HeaderOnInviteAll()
 end
 
 function ERC:HeaderOnRemoveAll()
-    ERC:DPrint("Header " .. self.rank .. " [Remove ALL] Clicked")
+    local item = ERC.workingList[self:GetParent():GetParent():GetID()]
+    if not item or not item.header then return end
+    local rname = item.truename
+    ERC:DPrint("Header " .. rname .. " [Remove ALL] Clicked")
     local info = C_Calendar.GetEventIndex()
-    members = allofrank(self.rank)
+    local members = allofrank(item.rank)
     local numInvites = C_Calendar.GetNumInvites()
     for invidx = 1, numInvites do
         local invite_info = C_Calendar.EventGetInvite(invidx)
         ERC:DPrint("HeaderOnRemoveAll() Index:" .. invidx .. " name:" .. invite_info.name)
         if not invite_info.inviteIsMine then
+            -- WoW's calendar gives same-realm names stripped ("Foo") and cross-realm
+            -- names full ("Foo-Realm"). Ambiguate(_, "guild") always strips, so for
+            -- cross-realm invites we'd miss the match without the full-name fallback.
             for k, v in pairs(members) do
-                if Ambiguate(k, "guild") == invite_info.name then
+                if Ambiguate(k, "guild") == invite_info.name or k == invite_info.name then
                     ERC:DPrint("HeaderOnRemoveAll() " .. invite_info.name .. " scheduled for remove")
                     ERC:SendMessage("ERC_UNINVITE", invite_info.name)
+                    break
                 end
             end
         end
@@ -529,17 +495,17 @@ function ERC:HeaderOnRemoveAll()
 end
 
 function ERC:DetailOnInvite()
-    ERC:DPrint("Detail " .. self.target .. " [Invite] Clicked")
-    local info = C_Calendar.GetEventIndex()
-    ERC:SendMessage("ERC_INVITE", self.target)
-    --CalendarEventInvite(self.target)
+    local item = ERC.workingList[self:GetParent():GetParent():GetID()]
+    if not item or item.header then return end
+    ERC:DPrint("Detail " .. item.name .. " [Invite] Clicked")
+    ERC:SendMessage("ERC_INVITE", item.name)
 end
 
 function ERC:DetailOnRemove()
-    ERC:DPrint("Detail " .. self.target .. " [Remove] Clicked")
-    local info = C_Calendar.GetEventIndex()
-    ERC:SendMessage("ERC_UNINVITE", self.target)
-    --CalendarEventRemoveInvite(self.target)
+    local item = ERC.workingList[self:GetParent():GetParent():GetID()]
+    if not item or item.header then return end
+    ERC:DPrint("Detail " .. item.name .. " [Remove] Clicked")
+    ERC:SendMessage("ERC_UNINVITE", item.name)
 end
 
 function ERC:UpdateWorkingList()
@@ -556,16 +522,15 @@ function ERC:UpdateWorkingList()
             rmmap[rankIndex + 1] = {}
         end
         if level >= self.db.profile.fLVL then
-            tinsert(rmmap[rankIndex + 1], z, { name = name, rname = rank, shortname = Ambiguate(name, "guild"), color = GetClassColorObj(classFileName) })
-            --rmmap[rankIndex+1][z] = {name=name,shortname=Ambiguate(name,"guild"),color=RAID_CLASS_COLORS[classFileName]}
+            tinsert(rmmap[rankIndex + 1], { name = name, rname = rank, shortname = Ambiguate(name, "guild"), color = GetClassColorObj(classFileName) })
         end
     end
     for k, v in pairs(rmmap) do
         local rname = GuildControlGetRankName(k)
-        local bigname = string.format("%s (%d)", rname, tablelength(allofrank(rname)))
+        local bigname = string.format("%s (%d)", rname, tablelength(v))
         tinsert(self.workingList, { rank = k, truename = rname, name = bigname, header = true, invited = false })
-        if self.workingHeadersOpen[rname] then
-            for i, g in pairs(v) do
+        if self.workingHeadersOpen[k] then
+            for i, g in ipairs(v) do
                 tinsert(self.workingList, { rank = k, idx = i, name = g.name, shortname = g.shortname, color = g.color, header = false, invited = false })
             end
         end
@@ -605,10 +570,8 @@ function Update(...)
 
                 button.ERCHeader.text:SetText(item.name)
                 button.ERCHeader.btn1:SetText("Invite All")
-                button.ERCHeader.btn1.rank = item.truename
                 button.ERCHeader.btn2:SetText("Remove All")
-                button.ERCHeader.btn2.rank = item.truename
-                if self.workingHeadersOpen[item.truename] then
+                if self.workingHeadersOpen[item.rank] then
                     button.ERCHeader.expandIcon:SetTexCoord(0.5625, 1, 0, 0.4375) -- minus sign
                 else
                     button.ERCHeader.expandIcon:SetTexCoord(0, 0.4375, 0, 0.4375) -- plus sign
@@ -616,7 +579,7 @@ function Update(...)
                 button.ERCDetail:Hide()
                 button.ERCHeader:Show()
             else
-                button.ERCDetail.text:SetText(modern and item.name or item.shortname)
+                button.ERCDetail.text:SetText(item.name)
                 button.ERCDetail.text:SetTextColor(item.color.r, item.color.g, item.color.b, item.color.a)
                 if item.invited == true then
                     button.ERCDetail.btn1:Disable()
@@ -626,9 +589,7 @@ function Update(...)
                     button.ERCDetail.btn2:Disable()
                 end
                 button.ERCDetail.btn1:SetText("Invite")
-                button.ERCDetail.btn1.target = item.name
                 button.ERCDetail.btn2:SetText("Remove")
-                button.ERCDetail.btn2.target = item.name
                 button.ERCHeader:Hide()
                 button.ERCDetail:Show()
             end
