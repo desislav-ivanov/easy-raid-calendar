@@ -24,10 +24,7 @@ local backdrop = {
 }
 
 local defaults = {
-    profile = {
-        fLVL = 90,
-        mLVL = 90
-    }
+    profile = {}
 }
 
 function ERC:OnInitialize()
@@ -339,6 +336,9 @@ function ERC:OnEvent(event, ...)
             ERC.inviteList = {}
             ERC.removeList = {}
             ERC.debug = false
+            -- the level cap differs for each client (retail, Forever)
+            defaults.profile.fLVL = GetMaxPlayerLevel()
+            defaults.profile.mLVL = defaults.profile.fLVL
             ERC.db = LibStub("AceDB-3.0"):New("ERCDB", defaults, true)
             ERC.options = {
                 name = "General",

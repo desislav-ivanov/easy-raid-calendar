@@ -1,8 +1,9 @@
-## Interface: 120100
+## Interface: 120100, 16001
 ## Title: Easy Raid Calendar
-## Notes: Raid Calendar Invites Automation (retail)
+## Notes: Raid Calendar Invites Automation
 ## DefaultState: Enabled
 ## SavedVariables: ERCDB
 
+embeds.xml
 ERC.xml
 ERC.lua
